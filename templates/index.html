@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#07190d">
+<title>Futbol Champain Scores</title>
+<style>
+:root{--bg:#07190d;--panel:#0d2715;--panel2:#14351d;--line:#2b5b31;--white:#fafcf7;--muted:#aec3ae;--green:#34b84b;--gold:#fbd439;--cyan:#bfe8c1}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#14351d 0,#07190d 55%);color:var(--white);font-family:Inter,Segoe UI,Arial,sans-serif;min-height:100vh}
+header{padding:22px max(18px,calc((100% - 1180px)/2));border-bottom:1px solid var(--line);background:#07190deF;position:sticky;top:0;z-index:5;backdrop-filter:blur(12px)}
+.brand{display:flex;align-items:center;gap:13px}.ball{width:46px;height:46px;border-radius:14px;background:var(--gold);color:#122515;display:grid;place-items:center;font-size:25px;font-weight:900;box-shadow:0 5px 22px #fbd43933}
+h1{font-size:clamp(20px,3vw,29px);margin:0;letter-spacing:.2px}.sub{font-size:12px;color:var(--muted);margin-top:4px}
+main{max-width:1180px;margin:25px auto;padding:0 18px}.tabs{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:18px}
+button,.tab{border:1px solid var(--line);background:var(--panel2);color:var(--white);padding:12px 17px;border-radius:12px;font-weight:800;cursor:pointer;transition:.15s}
+button:hover,.tab:hover{border-color:var(--gold);transform:translateY(-1px)}.tab.active{background:var(--gold);color:#102315;border-color:var(--gold)}
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0 18px}.toolbar .spacer{flex:1}
+input{background:#07190d;color:white;border:1px solid var(--line);padding:13px 14px;border-radius:11px;min-width:220px;outline:none}input:focus{border-color:var(--gold)}
+.status{color:var(--muted);font-size:13px;margin:12px 2px;min-height:18px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:12px}
+.card{background:linear-gradient(145deg,#14351d,#0d2715);border:1px solid var(--line);border-radius:16px;padding:15px;box-shadow:0 8px 28px #0002}
+.league{color:var(--cyan);font-size:12px;font-weight:800;margin-bottom:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.match{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px}.team{display:flex;align-items:center;gap:8px;font-weight:750;min-width:0}.team.away{justify-content:flex-end;text-align:right}.team span{overflow:hidden;text-overflow:ellipsis}.crest{width:27px;height:27px;object-fit:contain}.score{font-size:23px;font-weight:950;color:var(--gold);white-space:nowrap}.meta{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;margin-top:12px}
+.live{color:#7dff91;font-weight:900}.save{padding:6px 10px;font-size:11px;border-radius:8px;color:var(--gold);background:#07190d}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px;background:var(--panel)}table{border-collapse:collapse;width:100%;min-width:650px}th,td{padding:12px 13px;text-align:center;border-bottom:1px solid #24482a;font-size:13px}th{color:var(--cyan);background:#14351d;position:sticky;top:0}td:nth-child(2),th:nth-child(2){text-align:left}.pos{color:var(--gold);font-weight:900}.pts{font-weight:900;color:var(--gold)}
+.leaguebar{display:flex;align-items:center;gap:12px;justify-content:center;margin:12px 0 18px}.leaguebar strong{font-size:17px;text-align:center}.empty{padding:40px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:15px}.hidden{display:none}
+@media(max-width:600px){header{padding:15px}.tabs{display:grid;grid-template-columns:repeat(2,1fr)}.tab{padding:12px 8px}.toolbar>*{flex:1}.toolbar input{min-width:100%}.match{gap:5px}.team{font-size:12px}.score{font-size:19px}}
+</style></head>
+<body>
+<header><div class="brand"><div class="ball">⚽</div><div><h1>Futbol Champain Scores</h1><div class="sub">RESULTADOS · LIGAS · FÚTBOL EN VIVO</div></div></div></header>
+<main>
+<nav class="tabs" id="tabs">
+<button class="tab active" data-tab="Resultados">RESULTADOS</button><button class="tab" data-tab="En vivo">EN VIVO</button><button class="tab" data-tab="Clasificaciones">CLASIFICACIONES</button><button class="tab" data-tab="Buscar">BUSCAR</button><button class="tab" data-tab="Favoritos">FAVORITOS ★</button>
+</nav>
+<section id="resultsView">
+<div class="toolbar" id="dateTools"><button id="prev">◀</button><strong id="dateLabel"></strong><button id="next">▶</button><span class="spacer"></span><button id="refresh">↻ ACTUALIZAR</button></div>
+<div id="results" class="grid"></div>
+</section>
+<section id="standingsView" class="hidden">
+<div class="leaguebar"><button id="leaguePrev">◀ ANTERIOR</button><strong id="leagueLabel">Cargando ligas…</strong><button id="leagueNext">SIGUIENTE ▶</button></div>
+<div id="table"></div>
+</section>
+<section id="searchView" class="hidden">
+<div class="toolbar"><input id="query" placeholder="Buscar equipo, liga o partido…"><button id="searchBtn">BUSCAR</button></div><div id="searchResults" class="grid"></div>
+</section>
+<div class="status" id="status">Conectando con 365Scores…</div>
+</main>
+<script>
+const $=s=>document.querySelector(s);let tab='Resultados',day=new Date(),leagues=[],leagueIndex=0,allResults=[];
+const fmt=d=>{let x=new Date(d);return x.toLocaleDateString('es-AR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})};
+function setStatus(t){$('#status').textContent=t||''}
+function safe(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function favs(){try{return JSON.parse(localStorage.getItem('fcs-favs')||'[]')}catch{return []}}
+function saveFav(m){let a=favs();if(!a.some(x=>String(x.game_id||x.url)===String(m.game_id||m.url))){a.push(m);localStorage.setItem('fcs-favs',JSON.stringify(a));setStatus('Partido guardado en Favoritos.')}else setStatus('Ese partido ya está guardado.')}
+function matchCard(m){let score=(m.home_score!=null&&m.away_score!=null)?`${safe(m.home_score)} - ${safe(m.away_score)}`:safe(m.time||'Horario a confirmar');let state=m.state==='in'?'<span class="live">● EN VIVO</span>':safe(m.status||'');return `<article class="card"><div class="league">${safe(m.league||'Fútbol')}</div><div class="match"><div class="team"><img class="crest" src="${safe(m.home_logo||'')}" onerror="this.style.visibility='hidden'"><span>${safe(m.home||'Local')}</span></div><div class="score">${score}</div><div class="team away"><span>${safe(m.away||'Visitante')}</span><img class="crest" src="${safe(m.away_logo||'')}" onerror="this.style.visibility='hidden'"></div></div><div class="meta"><span>${state}</span><button class="save" data-save="${safe(m.game_id||m.url||'')}">★ GUARDAR</button></div></article>`}
+function showMatches(items,target){$(target).innerHTML=items.length?items.map(matchCard).join(''):'<div class="empty">No hay partidos para mostrar.</div>';$(target).querySelectorAll('[data-save]').forEach(b=>b.onclick=()=>{let m=items.find(x=>String(x.game_id||x.url||'')===b.dataset.save);if(m)saveFav(m)})}
+async function loadResults(){setStatus('Consultando partidos…');$('#dateLabel').textContent=fmt(day);try{let localDate=`${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;let r=await fetch('/api/results?date='+localDate);let j=await r.json();allResults=j.items||[];showMatches(allResults,'#results');setStatus(j.error||`${allResults.length} partidos encontrados · Datos de 365Scores`)}catch(e){setStatus('No se pudo conectar con el servidor de resultados.')}}
+async function loadLive(){setStatus('Buscando partidos en vivo…');try{let j=await(await fetch('/api/live')).json();allResults=j.items||[];showMatches(allResults,'#results');setStatus(j.error||`${allResults.length} partidos en vivo.`)}catch(e){setStatus('No se pudo conectar con el servidor.')}}
+async function loadStandings(){setStatus('Cargando clasificaciones…');try{let j=await(await fetch('/api/standings')).json();leagues=j.leagues||[];leagueIndex=0;renderLeague();setStatus(j.error||`${leagues.length} ligas cargadas.`)}catch(e){setStatus('No se pudieron cargar las clasificaciones.')}}
+function renderLeague(){if(!leagues.length){$('#leagueLabel').textContent='Sin ligas disponibles';$('#table').innerHTML='<div class="empty">No hay clasificaciones disponibles en este momento.</div>';return}let l=leagues[leagueIndex];$('#leagueLabel').textContent=`${l.name} · ${leagueIndex+1}/${leagues.length} · ${l.rows.length} equipos`;let rows=l.rows;$('#table').innerHTML=`<div class="table-wrap"><table><thead><tr><th>POS</th><th>EQUIPO</th><th>PJ</th><th>G</th><th>E</th><th>P</th><th>GF</th><th>GC</th><th>DG</th><th>PTS</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td class="pos">${i+1}</td><td>${safe(r.team)}</td><td>${safe(r.played)}</td><td>${safe(r.won)}</td><td>${safe(r.drawn)}</td><td>${safe(r.lost)}</td><td>${safe(r.gf)}</td><td>${safe(r.ga)}</td><td>${safe(r.gd)}</td><td class="pts">${safe(r.points)}</td></tr>`).join('')}</tbody></table></div>`}
+async function doSearch(){let q=$('#query').value.trim();if(q.length<2){setStatus('Escribí al menos 2 caracteres.');return}setStatus('Buscando…');try{let j=await(await fetch('/api/search?q='+encodeURIComponent(q))).json();showMatches((j.items||[]).filter(x=>x.kind!=='info'),'#searchResults');let infos=(j.items||[]).filter(x=>x.kind==='info');if(infos.length)$('#searchResults').insertAdjacentHTML('beforeend',infos.map(x=>`<article class="card"><div class="league">${safe(x.display)}</div><b>${safe(x.title)}</b><div class="meta">${safe(x.snippet)}</div></article>`).join(''));setStatus(j.error||`${(j.items||[]).length} resultados.`)}catch(e){setStatus('Falló la búsqueda.')}}
+function activate(name){tab=name;document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));$('#resultsView').classList.toggle('hidden',!['Resultados','En vivo','Favoritos'].includes(name));$('#standingsView').classList.toggle('hidden',name!=='Clasificaciones');$('#searchView').classList.toggle('hidden',name!=='Buscar');$('#dateTools').classList.toggle('hidden',name!=='Resultados');if(name==='Resultados')loadResults();if(name==='En vivo')loadLive();if(name==='Clasificaciones'&&!leagues.length)loadStandings();if(name==='Favoritos')showMatches(favs(),'#results')}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>activate(b.dataset.tab));
+$('#prev').onclick=()=>{day.setDate(day.getDate()-1);loadResults()};$('#next').onclick=()=>{day.setDate(day.getDate()+1);loadResults()};$('#refresh').onclick=()=>tab==='En vivo'?loadLive():loadResults();
+$('#leaguePrev').onclick=()=>{if(leagues.length){leagueIndex=(leagueIndex-1+leagues.length)%leagues.length;renderLeague()}};$('#leagueNext').onclick=()=>{if(leagues.length){leagueIndex=(leagueIndex+1)%leagues.length;renderLeague()}};
+$('#searchBtn').onclick=doSearch;$('#query').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch()});
+loadResults();setInterval(()=>{if(tab==='Resultados')loadResults();if(tab==='En vivo')loadLive()},30000);
+</script></body></html>
